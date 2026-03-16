@@ -3,7 +3,7 @@
 *An interactive installation for hand, strings, and disappearing light*
 
 **Author:** Shiyu Wang  
-**Date:** 2026/03/15
+**Date:** 2026/03/15 
 **Context:** Workshop 4 in creative coding 2 (2025-26)
 
 ---
