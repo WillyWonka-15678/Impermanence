@@ -2,6 +2,10 @@
 
 *An interactive installation for hand, strings, and disappearing light*
 
+**Author:** Shiyu Wang  
+**Date:** 2026/03/15
+**Context:** Workshop 4 in creative coding 2 (2025-26)
+
 ---
 
 ## Artist Statement
@@ -11,6 +15,23 @@ A hand-tracking camera renders your fingers as a constellation of stars. Pinch a
 This piece is about impermanence — not as an abstract philosophy, but as a physical sensation. The gesture of pinching and pulling is one of holding on. The light that remains after you let go is the closest thing to a memory the work has. Then it dissolves, and the space is empty again, waiting for the next hand.
 
 The body is not in control here. It is a disturbance.
+
+---
+
+## Instructions
+
+*For the audience / performer*
+
+1. **Stand** approximately 0.5–1.5 metres from the camera, facing it directly.
+2. **Raise one hand** in front of you, palm facing the screen. You will see your hand rendered as a constellation of stars.
+3. **Move your hand** slowly across the frame until your fingertips are close to one of the strings.
+4. **Pinch** — bring your thumb tip and index finger tip together. The nearest string will lock onto your fingers.
+5. **Pull** — draw your hand away from the string's resting position. The further you pull, the brighter the trace and the louder the note.
+6. **Release** — open your fingers. The string will vibrate and sound. A glow remains where you touched.
+7. **Watch** the light trace over the next twenty-five seconds as it slowly fades and disappears.
+8. Repeat with any string. There is no wrong way to play.
+
+> The piece works best with slow, deliberate movements. Fast gestures are harder for the hand tracker to follow.
 
 ---
 
@@ -95,6 +116,14 @@ python3 -m http.server 8000
 
 ---
 
+## Optional Blurb
+
+*A short text for gallery handouts, event programmes, or social media:*
+
+> Twelve strings hang invisibly across the room. Reach in and pull one — your hand becomes a constellation, your touch leaves light. Twenty-five seconds later, it is gone. *Impermanence* is a small meditation on holding on, and letting go.
+
+---
+
 ## Adjustable Parameters
 
 All parameters are defined at the top of `sketch.js` and can be edited directly.
@@ -122,23 +151,32 @@ impermanence/
 
 ---
 
-## Concepts & References
+## Acknowledgements
 
-**Conceptual influences**
+**Conceptual inspirations**
 
 - *Wabi-sabi* — the Japanese aesthetic of transience and imperfection; the beauty of things that are incomplete or passing
 - *Anicca* (無常) — the Buddhist concept of impermanence; all conditioned phenomena are in constant flux
-- The Zen practice of sand mandalas: intricate, deliberate, then erased
+- The Zen practice of sand mandalas: weeks of intricate work, then erased in minutes
 
 **Artistic references**
 
-- Camille Utterback & Romy Achituv — *Text Rain* (1999): body interaction with projected falling elements
-- Golan Levin — *Messa di Voce* (2003): real-time audiovisual body-responsive performance
-- Ryoji Ikeda — minimalist audiovisual works exploring data, time, and disappearance
-- Chris Salter — research and practice on haptic and sensory installations
+- Camille Utterback & Romy Achituv — [*Text Rain*](http://camilleutterback.com/projects/text-rain/) (1999): pioneering body-responsive projected installation
+- Golan Levin — [*Messa di Voce*](https://www.flong.com/archive/projects/messa/index.html) (2003): real-time audiovisual performance with body as instrument
+- Ryoji Ikeda — minimalist audiovisual works exploring data, time, and disappearance; in particular *test pattern* and *data.tron*
+- Chris Salter — *Entangled: Technology and the Transformation of Performance* (2010)
 
-**Technical references**
+**Tools & libraries**
 
-- ml5.js HandPose documentation — [ml5js.org/reference/api-HandPose](https://ml5js.org/reference/api-HandPose/)
-- Daniel Shiffman, *The Nature of Code* — wave simulation and spring physics
-- p5.sound reference — [p5js.org/reference/#/libraries/p5.sound](https://p5js.org/reference/#/libraries/p5.sound)
+- [p5.js](https://p5js.org) — creative coding framework by the Processing Foundation
+- [ml5.js](https://ml5js.org) — friendly machine learning for the web, built on TensorFlow.js
+- [MediaPipe HandPose](https://developers.google.com/mediapipe/solutions/vision/hand_landmarker) — Google's real-time hand landmark detection model
+- [Daniel Shiffman, *The Nature of Code*](https://natureofcode.com) — wave simulation and spring physics
+- [p5.sound reference](https://p5js.org/reference/#/libraries/p5.sound)
+
+---
+
+## License
+
+This project is made for educational and exhibition purposes.
+Feel free to adapt with attribution.
