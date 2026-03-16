@@ -8,7 +8,9 @@ function mapY(y) { return map(y, 0, VIDEO_H, 0, height); }
 
 const NUM_STRINGS = 12;
 const FADE_MS     = 25000;
-const PINCH_PX    = 35;
+const PINCH_ENTER_PX = 60;   // 进入捏合：距离小于此值才视为捏合32
+const PINCH_EXIT_PX  = 75;  // 退出捏合：距离大于此值才视为松开（滞后，防抖）48
+const PINCH_SMOOTH_N = 5;   // 距离平滑：取最近 N 帧的平均
 const SEGMENTS    = 50;
 const STIFFNESS   = 0.2;
 const DAMPING     = 0.65;
@@ -47,6 +49,9 @@ let grabbedIdx  = null;
 let grabbedT    = 0;
 let isPinching  = false;
 let isLoaded    = false;
+let pinchDistHistory = [];  // 最近 N 帧的拇指-食指距离，用于平滑
+let smoothedLm = null;      // 手部关键点的平滑后屏幕坐标
+const HAND_SMOOTH = 0.4;    // 手部平滑程度（0~1，越大越跟手，越小越稳定）
 
 // 拖尾历史：每个关键点保存最近 N 帧的位置
 const TRAIL_LEN = 18;
@@ -150,22 +155,51 @@ function draw() {
     let lm   = hand.landmarks;
 
     if (lm && lm.length >= 21) {
+      // 计算当前帧的屏幕坐标
+      let currScreenLm = [];
+      for (let i = 0; i < 21; i++) {
+        currScreenLm[i] = {
+          x: mapX(lm[i][0]),
+          y: mapY(lm[i][1])
+        };
+      }
+
+      // 对手部关键点做指数平滑，减少颤抖
+      if (!smoothedLm) {
+        smoothedLm = currScreenLm.map(p => ({ x: p.x, y: p.y }));
+      } else {
+        for (let i = 0; i < 21; i++) {
+          smoothedLm[i].x = lerp(smoothedLm[i].x, currScreenLm[i].x, HAND_SMOOTH);
+          smoothedLm[i].y = lerp(smoothedLm[i].y, currScreenLm[i].y, HAND_SMOOTH);
+        }
+      }
+
       // 更新拖尾历史
       let now = millis();
       for (let i = 0; i < 21; i++) {
-        trailHistory[i].push({ x: mapX(lm[i][0]), y: mapY(lm[i][1]), t: now });
+        trailHistory[i].push({ x: smoothedLm[i].x, y: smoothedLm[i].y, t: now });
         // 只保留最近的帧
         if (trailHistory[i].length > TRAIL_LEN) trailHistory[i].shift();
       }
 
-      let tx = mapX(lm[4][0]), ty = mapY(lm[4][1]);
-      let ix = mapX(lm[8][0]), iy = mapY(lm[8][1]);
+      let tx = smoothedLm[4].x, ty = smoothedLm[4].y;
+      let ix = smoothedLm[8].x, iy = smoothedLm[8].y;
       let d  = dist(tx, ty, ix, iy);
       let mx = (tx + ix) / 2;
       let my = (ty + iy) / 2;
       pinchPos = createVector(mx, my);
 
-      let nowPinching = d < PINCH_PX;
+      // 距离平滑：减少单帧抖动
+      pinchDistHistory.push(d);
+      if (pinchDistHistory.length > PINCH_SMOOTH_N) pinchDistHistory.shift();
+      let smoothD = pinchDistHistory.length > 0
+        ? pinchDistHistory.reduce((a, b) => a + b, 0) / pinchDistHistory.length
+        : d;
+
+      // 滞后判定：进入捏合要更近，松开要更远，避免在边界反复切换
+      let nowPinching = isPinching
+        ? smoothD < PINCH_EXIT_PX
+        : smoothD < PINCH_ENTER_PX;
 
       if (nowPinching && !isPinching) {
         initAudio();
@@ -194,11 +228,13 @@ function draw() {
       }
 
       // 绘制星座手
-      drawConstellationHand(lm, nowPinching);
+      drawConstellationHand(smoothedLm, nowPinching);
     }
   } else {
-    // 手消失：清空拖尾
+    // 手消失：清空拖尾与捏合历史
     for (let i = 0; i < 21; i++) trailHistory[i] = [];
+    pinchDistHistory = [];
+    smoothedLm = null;
     if (isPinching && grabbedIdx !== null) {
       pluckSound(grabbedIdx, strings[grabbedIdx].dragAmt);
       strings[grabbedIdx].release();
@@ -217,12 +253,15 @@ function draw() {
     strings[i].draw(i === grabbedIdx);
   }
 
-  // 捏合光晕
+  // 捏合光晕（捏合时用暖色区分）
   if (pinchPos && isPinching) {
     noFill();
-    stroke(200, 230, 255, 100);
-    strokeWeight(0.8);
-    ellipse(pinchPos.x, pinchPos.y, 22, 22);
+    stroke(255, 195, 100, 140);
+    strokeWeight(1.2);
+    ellipse(pinchPos.x, pinchPos.y, 24, 24);
+    stroke(255, 220, 150, 80);
+    strokeWeight(0.6);
+    ellipse(pinchPos.x, pinchPos.y, 18, 18);
   }
 
   // 状态
@@ -278,37 +317,45 @@ function drawConstellationHand(lm, pinching) {
     }
   }
 
-  // 2. 星座连线
+  // 2. 星座连线（捏合时略偏暖色）
   for (let [a, b] of BONES) {
     if (!lm[a] || !lm[b]) continue;
-    let ax = mapX(lm[a][0]), ay = mapY(lm[a][1]);
-    let bx = mapX(lm[b][0]), by = mapY(lm[b][1]);
+    let ax = lm[a].x, ay = lm[a].y;
+    let bx = lm[b].x, by = lm[b].y;
     strokeWeight(4);
-    stroke(100, 160, 255, pinching ? 28 : 18);
-    line(ax, ay, bx, by);
-    strokeWeight(1.6);
-    stroke(170, 210, 255, pinching ? 210 : 165);
-    line(ax, ay, bx, by);
+    if (pinching) {
+      stroke(255, 180, 100, 35);
+      line(ax, ay, bx, by);
+      strokeWeight(1.6);
+      stroke(255, 220, 160, 200);
+      line(ax, ay, bx, by);
+    } else {
+      stroke(100, 160, 255, 18);
+      line(ax, ay, bx, by);
+      strokeWeight(1.6);
+      stroke(170, 210, 255, 165);
+      line(ax, ay, bx, by);
+    }
   }
 
   // 3. 星点
   noStroke();
   for (let i = 0; i < lm.length; i++) {
     if (!lm[i]) continue;
-    let x = mapX(lm[i][0]);
-    let y = mapY(lm[i][1]);
+    let x = lm[i].x;
+    let y = lm[i].y;
     let r = STAR_SIZE[i] || 2;
 
-    // 拇指尖(4)和食指尖(8)捏合时发光
+    // 拇指尖(4)和食指尖(8)捏合时发光（暖色表示捏合判定）
     let isActive = (i === 4 || i === 8) && pinching;
     let isFingerTip = (i === 4 || i === 8 || i === 12 || i === 16 || i === 20);
 
     if (isActive) {
-      fill(180, 220, 255, 25);
+      fill(255, 200, 100, 30);
       ellipse(x, y, r * 5, r * 5);
-      fill(210, 235, 255, 60);
+      fill(255, 220, 140, 70);
       ellipse(x, y, r * 2.5, r * 2.5);
-      fill(245, 252, 255, 240);
+      fill(255, 240, 200, 255);
       ellipse(x, y, r, r);
     } else if (isFingerTip) {
       fill(140, 185, 255, 30);
