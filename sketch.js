@@ -46,6 +46,7 @@ let traces  = [];
 let grabbedIdx  = null;
 let grabbedT    = 0;
 let isPinching  = false;
+let isLoaded    = false;
 
 // 拖尾历史：每个关键点保存最近 N 帧的位置
 const TRAIL_LEN = 18;
@@ -64,6 +65,7 @@ function setup() {
 
   handPose = ml5.handpose(video, { flipHorizontal: true }, () => {
     console.log('HandPose ready');
+    isLoaded = true;
   });
   handPose.on('predict', r => { hands = r; });
 
@@ -124,6 +126,14 @@ function dragSound(stringIdx, displacement) {
 // ─── draw ────────────────────────────────────────────────
 function draw() {
   background(0);
+
+  if (!isLoaded) {
+    fill(255);
+    textAlign(CENTER, CENTER);
+    textSize(48);
+    text("Loading, please wait...", width/2, height/2);
+    return;
+  }
 
   // 极淡摄像头剪影
   push();
